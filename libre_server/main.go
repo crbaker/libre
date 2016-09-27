@@ -4,9 +4,11 @@ import (
 	"log"
 	"net"
 
-	pb "github.com/libre/libre"
+	pb "github.com/crbaker/libre/libre"
 	"golang.org/x/net/context"
 	"google.golang.org/grpc"
+
+	_ "github.com/mattn/go-sqlite3"
 )
 
 const (
@@ -16,7 +18,13 @@ const (
 type server struct{}
 
 func (s *server) FetchBooks(ctx context.Context, in *pb.Empty) (*pb.FetchBooksReply, error) {
-	return &pb.FetchBooksReply{}, nil
+
+	dummyBook := pb.Book{Title: "Some Book", Description: "Really long read about the moon"}
+	otherBook := pb.Book{Title: "Some Book", Description: "Really long read about the moon"}
+
+	books := []*pb.Book{&dummyBook, &otherBook}
+
+	return &pb.FetchBooksReply{Books: books}, nil
 }
 
 func main() {

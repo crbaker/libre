@@ -1,0 +1,36 @@
+// protoc -I libre/ libre/libre.proto --go_out=plugins=grpc:libre
+
+syntax = "proto3";
+
+package libre;
+
+service Libre {
+  // fetched the books in the library
+  rpc FetchBooks (Empty) returns (FetchBooksReply) {}
+}
+
+message Empty {}
+
+message FetchBooksReply {
+  repeated Book books = 1;
+}
+
+message Book {
+    string title = 1;
+    string sub_title = 2;
+    string published_date = 3;
+    string description = 4;
+    repeated string authors = 5;
+    repeated Identifier industry_identifiers = 6;
+    repeated ImageLink image_links = 7;
+}
+
+message Identifier {
+    string type = 1;
+    string identifier = 2;
+}
+
+message ImageLink {
+    string small_thumbnail = 1;
+    string thumbnail = 2;
+}

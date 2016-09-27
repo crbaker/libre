@@ -7,9 +7,24 @@ package libre;
 service Libre {
   // fetched the books in the library
   rpc FetchBooks (Empty) returns (FetchBooksReply) {}
+  rpc SaveBook (SaveBookRequest) returns (SaveBookReply) {}
 }
 
 message Empty {}
+
+message SaveBookReply {
+    string message = 1;
+    ErrorCode error_code = 2;
+    enum ErrorCode {
+        OK = 0;
+        ERROR = 1;
+        DUPLICATE = 2;
+    }
+}
+
+message SaveBookRequest {
+    Book book = 1;
+}
 
 message FetchBooksReply {
   repeated Book books = 1;

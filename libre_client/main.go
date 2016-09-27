@@ -22,11 +22,13 @@ func main() {
 
 	c := pb.NewLibreClient(conn)
 
-	r, err := c.FetchBooks(context.Background(), &pb.Empty{})
+	r, err := c.SaveBook(context.Background(), &pb.SaveBookRequest{Book: &pb.Book{Title: "Some Funky Book"}})
+
+	// r, err := c.FetchBooks(context.Background(), &pb.Empty{})
 
 	if err != nil {
 		log.Fatalf("could not greet: %v", err)
 	}
 
-	log.Printf("Books: %s", r.Books)
+	log.Printf("Books: %s", r.Message)
 }

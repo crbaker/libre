@@ -1,41 +1,31 @@
 package database
 
 import (
-	"database/sql"
-	"io/ioutil"
-	"os"
-	"strings"
-
-	"log"
+	"encoding/json"
 
 	pb "github.com/crbaker/libre/libre"
 
-	// used for the sqlite3 connection
-	_ "github.com/mattn/go-sqlite3"
+	"github.com/HouzuoGuo/tiedot/db"
+	"github.com/fatih/structs"
+	"github.com/mitchellh/mapstructure"
 )
 
 const (
-	sqliteDb   = "./libre_database.db"
-	initScript = "./initial.sql"
-)
-
-var (
-	currentDb   *sql.DB
-	dbConnected bool
+	dbLocation = "./libre_database.db"
 )
 
 // PersistBook saves a book to the database
 func PersistBook(book *pb.Book) pb.SaveBookReply_ErrorCode {
 	db := openDatabase()
+	defer db.Close()
 
-	stmt, err := db.Prepare("INSERT INTO books(title, sub_title, description, published_date) values(?,?,?,?)")
-	checkErr(err)
+	coll := getCollection(db, "library")
 
-	res, err := stmt.Exec(book.Title, book.SubTitle, book.Description, book.PublishedDate)
-	checkErr(err)
+	_, err := coll.Insert(bookToRaw(book))
 
-	_, err = res.LastInsertId()
-	checkErr(err)
+	if err != nil {
+		panic(err)
+	}
 
 	return pb.SaveBookReply_OK
 }
@@ -43,111 +33,63 @@ func PersistBook(book *pb.Book) pb.SaveBookReply_ErrorCode {
 // FetchBooks fetches the collection of books from the database
 func FetchBooks() []*pb.Book {
 	db := openDatabase()
+	defer db.Close()
 
-	stmt, err := db.Prepare("SELECT id, title, sub_title, description, published_date FROM books")
-	checkErr(err)
-
-	rows, err := stmt.Query()
-
-	defer rows.Close()
+	coll := getCollection(db, "library")
 
 	var books []*pb.Book
 
-	for rows.Next() {
-		book := rowToBook(rows)
+	coll.ForEachDoc(func(id int, content []byte) (willMoveOn bool) {
+		var dat map[string]interface{}
+		if err := json.Unmarshal(content, &dat); err != nil {
+			panic(err)
+		}
+
+		book := rawToBook(dat)
 		books = append(books, &book)
-	}
+
+		return true
+	})
 
 	return books
 }
 
-func rowToBook(rows *sql.Rows) pb.Book {
-	var (
-		id            int
-		title         string
-		subTitle      string
-		description   string
-		publishedDate string
-	)
-	rows.Scan(&id, &title, &subTitle, &description, &publishedDate)
-	return pb.Book{Title: title, Description: description, PublishedDate: publishedDate, SubTitle: subTitle}
+func existsInSlice(slice []string, val string) bool {
+	for _, b := range slice {
+		if b == val {
+			return true
+		}
+	}
+	return false
 }
 
-type byName []os.FileInfo
-
-func (f byName) Len() int {
-	return len(f)
-}
-func (f byName) Less(i, j int) bool {
-	return strings.Compare(f[i].Name(), f[j].Name()) == -1
-}
-func (f byName) Swap(i, j int) {
-	f[i], f[j] = f[j], f[i]
+func getCollection(db *db.DB, col string) *db.Col {
+	if !existsInSlice(db.AllCols(), col) {
+		db.Create(col)
+	}
+	return db.Use(col)
 }
 
-func MigrateDatabase(migrationsPath ...string) {
+func bookToRaw(book *pb.Book) map[string]interface{} {
+	return structs.Map(book)
+}
 
-	ioutil.readd
-	files, err := ioutil.ReadDir(migrationsPath[0])
+func rawToBook(record map[string]interface{}) pb.Book {
+	var book pb.Book
+
+	err := mapstructure.Decode(record, &book)
 	checkErr(err)
 
-	// for
-
-	// db := openDatabase()
-
-	// stmt, err := db.Prepare("SELECT id, title, sub_title, description, published_date FROM books")
-	// checkErr(err)
-
-	// rows, err := stmt.Query()
+	return book
 }
 
-// InitDatabase gets a connection to the sqlite database after initializing it if needed
-func InitDatabase(script ...string) {
-
-	if !checkDatabase() {
-		scriptPath := initScript
-		if len(script) == 1 {
-			scriptPath = script[0]
-		}
-
-		sql, err := readInitalScript(scriptPath)
-		checkErr(err)
-
-		db := openDatabase()
-
-		_, err = db.Exec(sql)
-		checkErr(err)
-	}
-}
-
-func openDatabase() *sql.DB {
-
-	if !dbConnected {
-		log.Println("open database")
-		var err error
-		currentDb, err = sql.Open("sqlite3", sqliteDb)
-		checkErr(err)
-
-		dbConnected = true
-	}
-
-	return currentDb
-}
-
-func readInitalScript(script string) (string, error) {
-	dat, err := ioutil.ReadFile(script)
+func openDatabase() *db.DB {
+	db, err := db.OpenDB(dbLocation)
 	if err != nil {
-		return "", err
+		panic(err)
 	}
 
-	return string(dat), nil
-}
-
-func checkDatabase() bool {
-	if _, err := os.Stat(sqliteDb); os.IsNotExist(err) {
-		return false
-	}
-	return true
+	return db
 }
 
 func checkErr(err error) {

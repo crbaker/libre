@@ -8,8 +8,6 @@ import (
 	pb "github.com/crbaker/libre/libre"
 	"golang.org/x/net/context"
 	"google.golang.org/grpc"
-
-	_ "github.com/mattn/go-sqlite3"
 )
 
 const (
@@ -30,8 +28,6 @@ func (s *server) SaveBook(ctx context.Context, in *pb.SaveBookRequest) (*pb.Save
 func main() {
 	lis, err := net.Listen("tcp", port)
 	checkErr(err)
-
-	db.InitDatabase()
 
 	s := grpc.NewServer()
 	pb.RegisterLibreServer(s, &server{})

@@ -4,6 +4,9 @@ import (
 	"database/sql"
 	"io/ioutil"
 	"os"
+	"strings"
+
+	"log"
 
 	pb "github.com/crbaker/libre/libre"
 
@@ -16,18 +19,86 @@ const (
 	initScript = "./initial.sql"
 )
 
+var (
+	currentDb   *sql.DB
+	dbConnected bool
+)
+
 // PersistBook saves a book to the database
 func PersistBook(book *pb.Book) pb.SaveBookReply_ErrorCode {
-	db, err := sql.Open("sqlite3", sqliteDb)
+	db := openDatabase()
+
+	stmt, err := db.Prepare("INSERT INTO books(title, sub_title, description, published_date) values(?,?,?,?)")
 	checkErr(err)
 
-	stmt, err := db.Prepare("INSERT INTO books(title) values(?)")
+	res, err := stmt.Exec(book.Title, book.SubTitle, book.Description, book.PublishedDate)
 	checkErr(err)
 
-	_, err = stmt.Exec(book.Title)
+	_, err = res.LastInsertId()
 	checkErr(err)
 
-	return pb.SaveBookReply_DUPLICATE
+	return pb.SaveBookReply_OK
+}
+
+// FetchBooks fetches the collection of books from the database
+func FetchBooks() []*pb.Book {
+	db := openDatabase()
+
+	stmt, err := db.Prepare("SELECT id, title, sub_title, description, published_date FROM books")
+	checkErr(err)
+
+	rows, err := stmt.Query()
+
+	defer rows.Close()
+
+	var books []*pb.Book
+
+	for rows.Next() {
+		book := rowToBook(rows)
+		books = append(books, &book)
+	}
+
+	return books
+}
+
+func rowToBook(rows *sql.Rows) pb.Book {
+	var (
+		id            int
+		title         string
+		subTitle      string
+		description   string
+		publishedDate string
+	)
+	rows.Scan(&id, &title, &subTitle, &description, &publishedDate)
+	return pb.Book{Title: title, Description: description, PublishedDate: publishedDate, SubTitle: subTitle}
+}
+
+type byName []os.FileInfo
+
+func (f byName) Len() int {
+	return len(f)
+}
+func (f byName) Less(i, j int) bool {
+	return strings.Compare(f[i].Name(), f[j].Name()) == -1
+}
+func (f byName) Swap(i, j int) {
+	f[i], f[j] = f[j], f[i]
+}
+
+func MigrateDatabase(migrationsPath ...string) {
+
+	ioutil.readd
+	files, err := ioutil.ReadDir(migrationsPath[0])
+	checkErr(err)
+
+	// for
+
+	// db := openDatabase()
+
+	// stmt, err := db.Prepare("SELECT id, title, sub_title, description, published_date FROM books")
+	// checkErr(err)
+
+	// rows, err := stmt.Query()
 }
 
 // InitDatabase gets a connection to the sqlite database after initializing it if needed
@@ -50,10 +121,17 @@ func InitDatabase(script ...string) {
 }
 
 func openDatabase() *sql.DB {
-	db, err := sql.Open("sqlite3", sqliteDb)
-	checkErr(err)
 
-	return db
+	if !dbConnected {
+		log.Println("open database")
+		var err error
+		currentDb, err = sql.Open("sqlite3", sqliteDb)
+		checkErr(err)
+
+		dbConnected = true
+	}
+
+	return currentDb
 }
 
 func readInitalScript(script string) (string, error) {

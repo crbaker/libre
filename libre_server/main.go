@@ -19,20 +19,12 @@ const (
 type server struct{}
 
 func (s *server) FetchBooks(ctx context.Context, in *pb.Empty) (*pb.FetchBooksReply, error) {
-
-	dummyBook := pb.Book{Title: "Some Book", Description: "Really long read about the moon"}
-	otherBook := pb.Book{Title: "Some Book", Description: "Really long read about the moon"}
-
-	books := []*pb.Book{&dummyBook, &otherBook}
-
-	return &pb.FetchBooksReply{Books: books}, nil
+	return &pb.FetchBooksReply{Books: db.FetchBooks()}, nil
 }
 
 func (s *server) SaveBook(ctx context.Context, in *pb.SaveBookRequest) (*pb.SaveBookReply, error) {
-
-	db.PersistBook(in.Book)
-
-	return &pb.SaveBookReply{ErrorCode: pb.SaveBookReply_OK, Message: in.Book.Title}, nil
+	code := db.PersistBook(in.Book)
+	return &pb.SaveBookReply{ErrorCode: code}, nil
 }
 
 func main() {

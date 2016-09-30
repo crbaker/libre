@@ -5,12 +5,20 @@ syntax = "proto3";
 package libre;
 
 service Libre {
-  // fetched the books in the library
   rpc FetchBooks (Empty) returns (FetchBooksReply) {}
   rpc SaveBook (SaveBookRequest) returns (SaveBookReply) {}
+  rpc Search (SearchRequest) returns (SearchReply) {}
 }
 
 message Empty {}
+
+message SearchRequest {
+    string keyword = 1;
+}
+
+message SearchReply {
+    repeated Book books = 1;
+}
 
 message SaveBookReply {
     ErrorCode error_code = 1;
@@ -36,7 +44,7 @@ message Book {
     string description = 4;
     repeated string authors = 5;
     repeated Identifier industry_identifiers = 6;
-    repeated ImageLink image_links = 7;
+    ImageLink image_links = 7;
 }
 
 message Identifier {

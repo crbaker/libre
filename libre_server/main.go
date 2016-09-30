@@ -4,6 +4,7 @@ import (
 	"net"
 
 	db "github.com/crbaker/libre/libre_server/database"
+	se "github.com/crbaker/libre/libre_server/search"
 
 	pb "github.com/crbaker/libre/libre"
 	"golang.org/x/net/context"
@@ -23,6 +24,14 @@ func (s *server) FetchBooks(ctx context.Context, in *pb.Empty) (*pb.FetchBooksRe
 func (s *server) SaveBook(ctx context.Context, in *pb.SaveBookRequest) (*pb.SaveBookReply, error) {
 	code := db.PersistBook(in.Book)
 	return &pb.SaveBookReply{ErrorCode: code}, nil
+}
+
+func (s *server) Search(ctx context.Context, in *pb.SearchRequest) (*pb.SearchReply, error) {
+	books := se.Search(in.Keyword)
+
+	return &pb.SearchReply{
+		Books: books,
+	}, nil
 }
 
 func main() {

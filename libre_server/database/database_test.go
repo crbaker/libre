@@ -1,6 +1,7 @@
 package database
 
 import (
+	"fmt"
 	"os"
 	"testing"
 
@@ -14,10 +15,12 @@ func TestMain(m *testing.M) {
 	os.Exit(retCode)
 }
 
-func Test_SaveBook(t *testing.T) {
+func Test_DeleteBook(t *testing.T) {
+
+	os.RemoveAll(dbLocation)
 
 	authors := []string{"Penn", "Teller"}
-	imageLinks := []*pb.ImageLink{&pb.ImageLink{SmallThumbnail: "http", Thumbnail: "http:..."}}
+	imageLinks := &pb.ImageLink{SmallThumbnail: "http", Thumbnail: "http:..."}
 	identifiers := []*pb.Identifier{&pb.Identifier{Identifier: "ABC", Type: "isbn10"}}
 
 	dummyBook := pb.Book{Title: "Some Book",
@@ -28,7 +31,38 @@ func Test_SaveBook(t *testing.T) {
 		ImageLinks:          imageLinks,
 		IndustryIdentifiers: identifiers}
 
-	code := PersistBook(&dummyBook)
+	book, _ := PersistBook(&dummyBook)
+
+	fmt.Println(book)
+
+	fetchedBooks := FetchBooks()
+
+	assertIntEquals(len(fetchedBooks), 1, t)
+
+	DeleteBook(book)
+
+	// fetchedBooks = FetchBooks()
+
+	// assertIntEquals(len(fetchedBooks), 0, t)
+}
+
+func Test_SaveBook(t *testing.T) {
+
+	os.RemoveAll(dbLocation)
+
+	authors := []string{"Penn", "Teller"}
+	imageLinks := &pb.ImageLink{SmallThumbnail: "http", Thumbnail: "http:..."}
+	identifiers := []*pb.Identifier{&pb.Identifier{Identifier: "ABC", Type: "isbn10"}}
+
+	dummyBook := pb.Book{Title: "Some Book",
+		Description:         "Really long read about the moon",
+		PublishedDate:       "2016-01-01",
+		SubTitle:            "Some Sub Title",
+		Authors:             authors,
+		ImageLinks:          imageLinks,
+		IndustryIdentifiers: identifiers}
+
+	_, code := PersistBook(&dummyBook)
 
 	if code != pb.SaveBookReply_OK {
 		t.Error(code, pb.SaveBookReply_OK)
@@ -39,7 +73,7 @@ func Test_SaveBook(t *testing.T) {
 	assertIntEquals(len(fetchedBooks), 1, t)
 	assertIntEquals(len(fetchedBooks[0].Authors), 2, t)
 	assertIntEquals(len(fetchedBooks[0].IndustryIdentifiers), 1, t)
-	assertIntEquals(len(fetchedBooks[0].ImageLinks), 1, t)
+	assertStringEquals("http", fetchedBooks[0].ImageLinks.SmallThumbnail, t)
 	assertStringEquals(fetchedBooks[0].Title, "Some Book", t)
 	assertStringEquals(fetchedBooks[0].Description, "Really long read about the moon", t)
 	assertStringEquals(fetchedBooks[0].PublishedDate, "2016-01-01", t)

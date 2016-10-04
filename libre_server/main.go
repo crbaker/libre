@@ -22,7 +22,7 @@ func (s *server) FetchBooks(ctx context.Context, in *pb.Empty) (*pb.FetchBooksRe
 }
 
 func (s *server) SaveBook(ctx context.Context, in *pb.SaveBookRequest) (*pb.SaveBookReply, error) {
-	code := db.PersistBook(in.Book)
+	_, code := db.PersistBook(in.Book)
 	return &pb.SaveBookReply{ErrorCode: code}, nil
 }
 

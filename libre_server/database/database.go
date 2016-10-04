@@ -11,23 +11,38 @@ import (
 )
 
 const (
-	dbLocation = "./libre_database.db"
+	dbLocation     = "./libre_database.db"
+	collectionName = "library"
 )
 
-// PersistBook saves a book to the database
-func PersistBook(book *pb.Book) pb.SaveBookReply_ErrorCode {
+// DeleteBook removes a book from the database
+func DeleteBook(book *pb.Book) error {
 	db := openDatabase()
 	defer db.Close()
 
-	coll := getCollection(db, "library")
+	coll := getCollection(db, collectionName)
 
-	_, err := coll.Insert(bookToRaw(book))
+	err := coll.Delete(int(book.Id))
 
-	if err != nil {
-		panic(err)
-	}
+	checkErr(err)
 
-	return pb.SaveBookReply_OK
+	return err
+}
+
+// PersistBook saves a book to the database
+func PersistBook(book *pb.Book) (*pb.Book, pb.SaveBookReply_ErrorCode) {
+	db := openDatabase()
+	defer db.Close()
+
+	coll := getCollection(db, collectionName)
+
+	newID, err := coll.Insert(bookToRaw(book))
+
+	checkErr(err)
+
+	book.Id = int64(newID)
+
+	return book, pb.SaveBookReply_OK
 }
 
 // FetchBooks fetches the collection of books from the database
@@ -35,7 +50,7 @@ func FetchBooks() []*pb.Book {
 	db := openDatabase()
 	defer db.Close()
 
-	coll := getCollection(db, "library")
+	coll := getCollection(db, collectionName)
 
 	var books []*pb.Book
 

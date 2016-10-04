@@ -22,8 +22,17 @@ func (s *server) FetchBooks(ctx context.Context, in *pb.Empty) (*pb.FetchBooksRe
 }
 
 func (s *server) SaveBook(ctx context.Context, in *pb.SaveBookRequest) (*pb.SaveBookReply, error) {
-	_, code := db.PersistBook(in.Book)
-	return &pb.SaveBookReply{ErrorCode: code}, nil
+	book, err := db.PersistBook(in.Book)
+	return &pb.SaveBookReply{Book: book}, err
+}
+
+func (s *server) DeleteBook(ctx context.Context, in *pb.DeleteBookRequest) (*pb.Empty, error) {
+	err := db.DeleteBook(in.Book)
+
+	if err != nil {
+		return &pb.Empty{}, err
+	}
+	return &pb.Empty{}, nil
 }
 
 func (s *server) Search(ctx context.Context, in *pb.SearchRequest) (*pb.SearchReply, error) {

@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"log"
 
 	pb "github.com/crbaker/libre/libre"
@@ -22,11 +23,20 @@ func main() {
 
 	c := pb.NewLibreClient(conn)
 
-	// _, err = c.SaveBook(context.Background(), &pb.SaveBookRequest{Book: &pb.Book{Title: "Some Funky Book"}})/
-	// fetchReply, err := c.FetchBooks(context.Background(), &pb.Empty{})
-	sr, err := c.Search(context.Background(), &pb.SearchRequest{Keyword: "978-0393338102"})
+	saveReply, err := c.SaveBook(context.Background(), &pb.SaveBookRequest{Book: &pb.Book{Title: "Some Funky Book"}})
 
-	log.Println(sr.Books)
+	fetchReply, err := c.FetchBooks(context.Background(), &pb.Empty{})
+
+	fmt.Println(len(fetchReply.Books))
+
+	c.DeleteBook(context.Background(), &pb.DeleteBookRequest{Book: saveReply.Book})
+
+	fetchReply, err = c.FetchBooks(context.Background(), &pb.Empty{})
+	fmt.Println(len(fetchReply.Books))
+
+	// sr, err := c.Search(context.Background(), &pb.SearchRequest{Keyword: "978-0393338102"})
+
+	// log.Println(sr.Books)
 	// log.Print(len(fetchReply.Books))
 	// log.Printf("Books: %s", r.Message)
 }

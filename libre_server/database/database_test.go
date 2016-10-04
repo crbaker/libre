@@ -1,7 +1,6 @@
 package database
 
 import (
-	"fmt"
 	"os"
 	"testing"
 
@@ -33,17 +32,15 @@ func Test_DeleteBook(t *testing.T) {
 
 	book, _ := PersistBook(&dummyBook)
 
-	fmt.Println(book)
-
 	fetchedBooks := FetchBooks()
 
 	assertIntEquals(len(fetchedBooks), 1, t)
 
 	DeleteBook(book)
 
-	// fetchedBooks = FetchBooks()
+	fetchedBooks = FetchBooks()
 
-	// assertIntEquals(len(fetchedBooks), 0, t)
+	assertIntEquals(len(fetchedBooks), 0, t)
 }
 
 func Test_SaveBook(t *testing.T) {
@@ -62,10 +59,10 @@ func Test_SaveBook(t *testing.T) {
 		ImageLinks:          imageLinks,
 		IndustryIdentifiers: identifiers}
 
-	_, code := PersistBook(&dummyBook)
+	_, error := PersistBook(&dummyBook)
 
-	if code != pb.SaveBookReply_OK {
-		t.Error(code, pb.SaveBookReply_OK)
+	if error != nil {
+		t.Error(error)
 	}
 
 	fetchedBooks := FetchBooks()

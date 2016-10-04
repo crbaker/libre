@@ -8,9 +8,12 @@ service Libre {
   rpc FetchBooks (Empty) returns (FetchBooksReply) {}
   rpc SaveBook (SaveBookRequest) returns (SaveBookReply) {}
   rpc Search (SearchRequest) returns (SearchReply) {}
+  rpc DeleteBook (DeleteBookRequest) returns (Empty) {}
 }
 
 message Empty {}
+
+
 
 message SearchRequest {
     string keyword = 1;
@@ -20,13 +23,12 @@ message SearchReply {
     repeated Book books = 1;
 }
 
+message DeleteBookRequest {
+    Book book = 1;
+}
+
 message SaveBookReply {
-    ErrorCode error_code = 1;
-    enum ErrorCode {
-        OK = 0;
-        ERROR = 1;
-        DUPLICATE = 2;
-    }
+    Book book = 1;
 }
 
 message SaveBookRequest {

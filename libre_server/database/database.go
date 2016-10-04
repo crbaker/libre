@@ -24,13 +24,11 @@ func DeleteBook(book *pb.Book) error {
 
 	err := coll.Delete(int(book.Id))
 
-	checkErr(err)
-
 	return err
 }
 
 // PersistBook saves a book to the database
-func PersistBook(book *pb.Book) (*pb.Book, pb.SaveBookReply_ErrorCode) {
+func PersistBook(book *pb.Book) (*pb.Book, error) {
 	db := openDatabase()
 	defer db.Close()
 
@@ -38,11 +36,13 @@ func PersistBook(book *pb.Book) (*pb.Book, pb.SaveBookReply_ErrorCode) {
 
 	newID, err := coll.Insert(bookToRaw(book))
 
-	checkErr(err)
+	if err != nil {
+		return book, err
+	}
 
 	book.Id = int64(newID)
 
-	return book, pb.SaveBookReply_OK
+	return book, nil
 }
 
 // FetchBooks fetches the collection of books from the database
